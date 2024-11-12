@@ -11,7 +11,12 @@ import {
 } from "../components/ui/dialog";
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 
-const BallIcon = ({ number, className }) => (
+interface BallIconProps {
+  number: number;
+  className?: string;
+}
+
+const BallIcon = ({ number, className }: BallIconProps) => (
   <div className={`inline-block relative ${className}`}>
     <svg viewBox="0 0 100 100" width="32" height="32">
       {/* Ball background */}
