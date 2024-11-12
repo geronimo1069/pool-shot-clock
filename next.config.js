@@ -4,5 +4,5 @@ const nextConfig = {
       ignoreDuringBuilds: true,
     },
   }
-  
+  // Testing automatic deployment
   module.exports = nextConfig
