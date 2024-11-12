@@ -82,19 +82,20 @@ const PoolShotClock = () => {
     player2: { shots: 0, totalTime: 0, shotTimes: [] }
   });
   
-  const timerRef = useRef<NodeJS.Timer | null>(null);
-  const warningTime = 20;
-  const timeLimit = 25;
-  
+  const timerRef = useRef<number | null>(null);
+
   const startTimer = () => {
     setIsRunning(true);
-    timerRef.current = setInterval(() => {
+    timerRef.current = window.setInterval(() => {
       setCurrentTime(prev => prev + 1);
     }, 1000);
   };
   
   const pauseTimer = () => {
-    clearInterval(timerRef.current);
+    if (timerRef.current !== null) {
+      window.clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
     setIsRunning(false);
   };
   
@@ -113,16 +114,19 @@ const PoolShotClock = () => {
       };
     });
     setCurrentTime(0);
-    if (timerRef.current) clearInterval(timerRef.current);
+    if (timerRef.current !== null) {
+      window.clearInterval(timerRef.current);
+    }
     startTimer();
   };
   
   const switchPlayer = () => {
     setCurrentPlayer(prev => prev === 1 ? 2 : 1);
     setCurrentTime(0);
-    if (timerRef.current) clearInterval(timerRef.current);
-    // Start the timer immediately for the next player
-    timerRef.current = setInterval(() => {
+    if (timerRef.current !== null) {
+      window.clearInterval(timerRef.current);
+    }
+    timerRef.current = window.setInterval(() => {
       setCurrentTime(prev => prev + 1);
     }, 1000);
     setIsRunning(true);
