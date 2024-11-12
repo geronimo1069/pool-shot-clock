@@ -82,7 +82,7 @@ const PoolShotClock = () => {
     player2: { shots: 0, totalTime: 0, shotTimes: [] }
   });
   
-  const timerRef = useRef(null);
+  const timerRef = useRef<NodeJS.Timer | null>(null);
   const warningTime = 20;
   const timeLimit = 25;
   
