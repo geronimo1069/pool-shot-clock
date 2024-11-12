@@ -11,6 +11,17 @@ import {
 } from "../components/ui/dialog";
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 
+interface PlayerStats {
+  shots: number;
+  totalTime: number;
+  shotTimes: number[];
+}
+
+interface PlayerStatsState {
+  player1: PlayerStats;
+  player2: PlayerStats;
+}
+
 interface BallIconProps {
   number: number;
   className?: string;
@@ -77,7 +88,7 @@ const PoolShotClock = () => {
   const [currentPlayer, setCurrentPlayer] = useState(1);
   const [player1Name, setPlayer1Name] = useState("Player 1");
   const [player2Name, setPlayer2Name] = useState("Player 2");
-  const [playerStats, setPlayerStats] = useState({
+  const [playerStats, setPlayerStats] = useState<PlayerStatsState>({
     player1: { shots: 0, totalTime: 0, shotTimes: [] },
     player2: { shots: 0, totalTime: 0, shotTimes: [] }
   });
@@ -100,7 +111,7 @@ const PoolShotClock = () => {
   };
   
   const nextShot = () => {
-    const playerKey = `player${currentPlayer}`;
+    const playerKey = currentPlayer === 1 ? 'player1' : 'player2';
     setPlayerStats(prev => {
       const shotTime = currentTime;
       const updatedShotTimes = [...prev[playerKey].shotTimes, shotTime].sort((a, b) => b - a);
@@ -113,6 +124,7 @@ const PoolShotClock = () => {
         }
       };
     });
+    
     setCurrentTime(0);
     if (timerRef.current !== null) {
       window.clearInterval(timerRef.current);
