@@ -202,7 +202,7 @@ const switchPlayer = () => {
       <>
         {slicedTimes.map((time, index) => (
           <div key={index} 
-            className={`rounded p-1 text-center text-sm ${
+            className={`rounded p-2 text-center text-sm ${
               time >= timeLimit ? 'bg-red-50 text-red-600' : 
               time >= warningTime ? 'bg-yellow-50 text-yellow-600' : 
               'bg-blue-50'
@@ -211,8 +211,8 @@ const switchPlayer = () => {
             {time}s
           </div>
         ))}
-        {Array(5 - slicedTimes.length).fill(0).map((_, index) => (
-          <div key={`empty-${start}-${index}`} className="bg-gray-50 rounded p-1 text-center text-sm text-gray-400">
+        {Array(4 - slicedTimes.length).fill(0).map((_, index) => (
+          <div key={`empty-${start}-${index}`} className="bg-gray-50 rounded p-2 text-center text-sm text-gray-400">
             --
           </div>
         ))}
@@ -339,7 +339,8 @@ const switchPlayer = () => {
 
       {/* Control Buttons */}
       <div className="p-4 bg-gray-200">
-        {/* Top row buttons */}
+        {/* 
+        // Original Button Code - Keep for reference
         <div className="grid grid-cols-2 gap-4 mb-4">
           <button
             onClick={isRunning ? pauseTimer : startTimer}
@@ -359,7 +360,6 @@ const switchPlayer = () => {
           </button>
         </div>
 
-        {/* Bottom row buttons */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           <button
             onClick={switchPlayer}
@@ -377,7 +377,6 @@ const switchPlayer = () => {
           </button>
         </div>
 
-        {/* Time Out Button */}
         <button
           onClick={toggleTimeOut}
           className={`h-16 rounded-lg flex items-center justify-between p-4 text-white font-bold w-full ${getTimeOutColor()}`}
@@ -388,6 +387,59 @@ const switchPlayer = () => {
           </div>
           {isTimeOut && (
             <div className={`text-xl ${timeOutTime >= timeOutWarning ? 'animate-pulse' : ''}`}>
+              {String(timeOutTime).padStart(2, '0')}s
+            </div>
+          )}
+        </button>
+        */}
+
+        {/* New Enhanced Mobile-Friendly Buttons */}
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <button
+            onClick={isRunning ? pauseTimer : startTimer}
+            className={`h-20 rounded-xl flex items-center justify-center gap-3 ${
+              isRunning ? 'bg-red-500 active:bg-red-700' : 'bg-green-500 active:bg-green-700'
+            } text-white font-bold w-full text-lg shadow-md active:shadow-sm transform active:scale-95 transition-all touch-manipulation`}
+          >
+            {isRunning ? <Pause size={28} /> : <Play size={28} />}
+            {isRunning ? 'Pause' : 'Start'}
+          </button>
+          <button
+            onClick={nextShot}
+            className="h-20 rounded-xl bg-orange-500 active:bg-orange-700 text-white font-bold flex items-center justify-center gap-3 w-full text-lg shadow-md active:shadow-sm transform active:scale-95 transition-all touch-manipulation"
+          >
+            <Timer size={28} />
+            Next Shot
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <button
+            onClick={switchPlayer}
+            className="h-20 rounded-xl bg-purple-500 active:bg-purple-700 text-white font-bold flex items-center justify-center gap-3 w-full text-lg shadow-md active:shadow-sm transform active:scale-95 transition-all touch-manipulation"
+          >
+            <User size={28} />
+            Switch Player
+          </button>
+          <button
+            onClick={resetStats}
+            className="h-20 rounded-xl bg-gray-500 active:bg-gray-700 text-white font-bold flex items-center justify-center gap-3 w-full text-lg shadow-md active:shadow-sm transform active:scale-95 transition-all touch-manipulation"
+          >
+            <RotateCcw size={28} />
+            Reset
+          </button>
+        </div>
+
+        <button
+          onClick={toggleTimeOut}
+          className={`h-20 rounded-xl flex items-center justify-between px-6 text-white font-bold w-full text-lg shadow-md active:shadow-sm transform active:scale-95 transition-all touch-manipulation ${getTimeOutColor()}`}
+        >
+          <div className="flex items-center justify-center gap-3">
+            <Timer size={28} />
+            {isTimeOut ? "End Time Out" : "Time Out"}
+          </div>
+          {isTimeOut && (
+            <div className={`text-2xl ${timeOutTime >= timeOutWarning ? 'animate-pulse' : ''}`}>
               {String(timeOutTime).padStart(2, '0')}s
             </div>
           )}
@@ -414,11 +466,14 @@ const switchPlayer = () => {
               </span>
             </div>
             <div className="text-sm font-medium text-gray-600 mt-2">Longest Times:</div>
-            <div className="grid grid-cols-5 gap-1 mt-1">
-              {renderTimeRow(getTopLongestTimes('player1'), 0, 5)}
+            <div className="grid grid-cols-4 gap-1 mt-1">
+              {renderTimeRow(getTopLongestTimes('player1'), 0, 4)}
             </div>
-            <div className="grid grid-cols-5 gap-1 mt-1">
-              {renderTimeRow(getTopLongestTimes('player1'), 5, 10)}
+            <div className="grid grid-cols-4 gap-1 mt-1">
+              {renderTimeRow(getTopLongestTimes('player1'), 4, 8)}
+            </div>
+            <div className="grid grid-cols-4 gap-1 mt-1">
+              {renderTimeRow(getTopLongestTimes('player1'), 8, 12)}
             </div>
           </div>
 
@@ -439,11 +494,14 @@ const switchPlayer = () => {
               </span>
             </div>
             <div className="text-sm font-medium text-gray-600 mt-2">Longest Times:</div>
-            <div className="grid grid-cols-5 gap-1 mt-1">
-              {renderTimeRow(getTopLongestTimes('player2'), 0, 5)}
+            <div className="grid grid-cols-4 gap-1 mt-1">
+              {renderTimeRow(getTopLongestTimes('player2'), 0, 4)}
             </div>
-            <div className="grid grid-cols-5 gap-1 mt-1">
-              {renderTimeRow(getTopLongestTimes('player2'), 5, 10)}
+            <div className="grid grid-cols-4 gap-1 mt-1">
+              {renderTimeRow(getTopLongestTimes('player2'), 4, 8)}
+            </div>
+            <div className="grid grid-cols-4 gap-1 mt-1">
+              {renderTimeRow(getTopLongestTimes('player2'), 8, 12)}
             </div>
           </div>
         </div>
