@@ -10,6 +10,7 @@ import {
   DialogTrigger,
 } from "../components/ui/dialog";
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
+import { cn } from "../lib/utils";
 
 interface PlayerStats {
   shots: number;
@@ -21,6 +22,8 @@ interface PlayerStatsState {
   player1: PlayerStats;
   player2: PlayerStats;
 }
+
+type PlayerKey = 'player1' | 'player2';
 
 interface BallIconProps {
   number: number;
@@ -93,25 +96,50 @@ const PoolShotClock = () => {
     player2: { shots: 0, totalTime: 0, shotTimes: [] }
   });
   
-  const timerRef = useRef<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const warningTime = 20;
+  const timeLimit = 25;
 
   const startTimer = () => {
     setIsRunning(true);
-    timerRef.current = window.setInterval(() => {
+    timerRef.current = setInterval(() => {
       setCurrentTime(prev => prev + 1);
     }, 1000);
-  };
-  
-  const pauseTimer = () => {
-    if (timerRef.current !== null) {
-      window.clearInterval(timerRef.current);
-      timerRef.current = null;
+};
+
+const pauseTimer = () => {
+    if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = undefined;
     }
     setIsRunning(false);
-  };
+};
   
-  const nextShot = () => {
-    const playerKey = currentPlayer === 1 ? 'player1' : 'player2';
+const nextShot = () => {
+  const playerKey: PlayerKey = currentPlayer === 1 ? 'player1' : 'player2';
+  setPlayerStats(prev => {
+      const shotTime = currentTime;
+      const updatedShotTimes = [...prev[playerKey].shotTimes, shotTime].sort((a, b) => b - a);
+      return {
+          ...prev,
+          [playerKey]: {
+              shots: prev[playerKey].shots + 1,
+              totalTime: prev[playerKey].totalTime + shotTime,
+              shotTimes: updatedShotTimes
+          }
+      };
+  });
+  setCurrentTime(0);
+  if (timerRef.current !== null) {
+      clearInterval(timerRef.current);
+  }
+  startTimer();
+};
+  
+const switchPlayer = () => {
+  // If timer is running, record the current time for the current player
+  if (isRunning) {
+    const playerKey = `player${currentPlayer}` as keyof PlayerStatsState;
     setPlayerStats(prev => {
       const shotTime = currentTime;
       const updatedShotTimes = [...prev[playerKey].shotTimes, shotTime].sort((a, b) => b - a);
@@ -124,31 +152,23 @@ const PoolShotClock = () => {
         }
       };
     });
-    
-    setCurrentTime(0);
-    if (timerRef.current !== null) {
-      window.clearInterval(timerRef.current);
-    }
-    startTimer();
-  };
+  }
+
+  // Reset timer and switch player
+  setCurrentTime(0);
+  if (timerRef.current) clearInterval(timerRef.current);
+  setCurrentPlayer(prev => prev === 1 ? 2 : 1);
   
-  const switchPlayer = () => {
-    setCurrentPlayer(prev => prev === 1 ? 2 : 1);
-    setCurrentTime(0);
-    if (timerRef.current !== null) {
-      window.clearInterval(timerRef.current);
-    }
-    timerRef.current = window.setInterval(() => {
-      setCurrentTime(prev => prev + 1);
-    }, 1000);
-    setIsRunning(true);
-  };
+  // Start the timer for the new player
+  startTimer();
+};
   
-  const getAverageTime = (player) => {
-    const stats = playerStats[`player${player}`];
+  const getAverageTime = (player: number) => {
+    const playerKey: PlayerKey = `player${player}` as PlayerKey;
+    const stats = playerStats[playerKey];
     return stats.shots === 0 ? 0 : (stats.totalTime / stats.shots).toFixed(1);
   };
-
+  
   const getTimerColor = () => {
     if (currentTime >= timeLimit) {
       return 'text-red-600';
@@ -163,11 +183,11 @@ const PoolShotClock = () => {
     return currentPlayer === 1 ? player1Name : player2Name;
   };
 
-  const getTopLongestTimes = (playerKey) => {
+  const getTopLongestTimes = (playerKey: PlayerKey) => {
     return playerStats[playerKey].shotTimes.slice(0, 10);
   };
 
-  const getShotCounts = (playerKey) => {
+  const getShotCounts = (playerKey: PlayerKey) => {
     const times = playerStats[playerKey].shotTimes;
     return {
       red: times.filter(time => time >= timeLimit).length,
@@ -176,7 +196,7 @@ const PoolShotClock = () => {
     };
   };
 
-  const renderTimeRow = (times, start, end) => {
+  const renderTimeRow = (times: number[], start: number, end: number) => {
     const slicedTimes = times.slice(start, end);
     return (
       <>
@@ -249,45 +269,52 @@ const PoolShotClock = () => {
   };
 
   return (
-    <div className="max-w-sm mx-auto min-h-screen bg-gray-200 flex flex-col">
-      {/* Header */}
-      <div className="bg-blue-600 text-white py-3 px-4 shadow-lg">
+    <div className="max-w-md mx-auto bg-gray-100 min-h-screen p-4 flex flex-col">
+      <div className="bg-blue-600 text-white p-4 shadow-lg rounded-lg mb-4">
         <div className="flex items-center justify-between">
           <BallIcon number={8} />
           <h1 className="text-2xl font-bold text-center tracking-wide">
             POCKET PACE
           </h1>
           <div className="flex items-center gap-2">
-            <Dialog>
-              <DialogTrigger>
-                <Settings size={24} className="text-white hover:text-blue-200 cursor-pointer" />
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Player Settings</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <label className="text-right font-medium">Player 1:</label>
-                    <input
-                      className="col-span-3 flex h-10 rounded-md border border-input bg-background px-3 py-2"
-                      value={player1Name}
-                      onChange={(e) => setPlayer1Name(e.target.value)}
-                      placeholder="Enter player 1 name"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <label className="text-right font-medium">Player 2:</label>
-                    <input
-                      className="col-span-3 flex h-10 rounded-md border border-input bg-background px-3 py-2"
-                      value={player2Name}
-                      onChange={(e) => setPlayer2Name(e.target.value)}
-                      placeholder="Enter player 2 name"
-                    />
-                  </div>
+          <Dialog>
+            <DialogTrigger asChild>
+              <button className="text-white hover:text-blue-200">
+                <Settings size={24} />
+              </button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Player Settings</DialogTitle>
+              </DialogHeader>
+              <form className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="player1" className="text-right font-medium">
+                    Player 1
+                  </label>
+                  <input
+                    id="player1"
+                    value={player1Name}
+                    onChange={(e) => setPlayer1Name(e.target.value)}
+                    className="col-span-3 flex h-10 rounded-md border border-input bg-background px-3 py-2"
+                    placeholder="Enter player 1 name"
+                  />
                 </div>
-              </DialogContent>
-            </Dialog>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="player2" className="text-right font-medium">
+                    Player 2
+                  </label>
+                  <input
+                    id="player2"
+                    value={player2Name}
+                    onChange={(e) => setPlayer2Name(e.target.value)}
+                    className="col-span-3 flex h-10 rounded-md border border-input bg-background px-3 py-2"
+                    placeholder="Enter player 2 name"
+                  />
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
             <BallIcon number={9} />
           </div>
         </div>
