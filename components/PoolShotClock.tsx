@@ -97,17 +97,21 @@ const BallIcon = ({ number, className }: BallIconProps) => (
 );
 
 const PoolShotClock = () => {
-  // Load saved player names and stats from localStorage if they exist
   const getSavedPlayerNames = () => {
-    const saved = localStorage.getItem('poolPlayerNames');
-    return saved ? JSON.parse(saved) : null;
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('poolPlayerNames');
+      return saved ? JSON.parse(saved) : null;
+    }
+    return null;
   };
 
   const getSavedPlayerStats = () => {
-    const saved = localStorage.getItem('poolPlayerStats');
-    return saved ? JSON.parse(saved) : null;
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('poolPlayerStats');
+      return saved ? JSON.parse(saved) : null;
+    }
+    return null;
   };
-
   const [currentTime, setCurrentTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [currentPlayer, setCurrentPlayer] = useState(1);
