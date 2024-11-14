@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause, RotateCcw, Timer, User, Settings } from 'lucide-react';
 import {
   Dialog,
@@ -24,6 +24,17 @@ interface PlayerStatsState {
 }
 
 type PlayerKey = 'player1' | 'player2';
+
+interface GameState {
+  currentTime: number;
+  isRunning: boolean;
+  currentPlayer: number;
+  player1Name: string;
+  player2Name: string;
+  playerStats: PlayerStatsState;
+  isTimeOut: boolean;
+  timeOutTime: number;
+}
 
 interface BallIconProps {
   number: number;
@@ -86,19 +97,62 @@ const BallIcon = ({ number, className }: BallIconProps) => (
 );
 
 const PoolShotClock = () => {
+  // Load saved player names and stats from localStorage if they exist
+  const getSavedPlayerNames = () => {
+    const saved = localStorage.getItem('poolPlayerNames');
+    return saved ? JSON.parse(saved) : null;
+  };
+
+  const getSavedPlayerStats = () => {
+    const saved = localStorage.getItem('poolPlayerStats');
+    return saved ? JSON.parse(saved) : null;
+  };
+
   const [currentTime, setCurrentTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [currentPlayer, setCurrentPlayer] = useState(1);
-  const [player1Name, setPlayer1Name] = useState("Player 1");
-  const [player2Name, setPlayer2Name] = useState("Player 2");
-  const [playerStats, setPlayerStats] = useState<PlayerStatsState>({
-    player1: { shots: 0, totalTime: 0, shotTimes: [] },
-    player2: { shots: 0, totalTime: 0, shotTimes: [] }
-  });
+  const [player1Name, setPlayer1Name] = useState(() => 
+    getSavedPlayerNames()?.player1Name ?? "Player 1"
+  );
+  const [player2Name, setPlayer2Name] = useState(() => 
+    getSavedPlayerNames()?.player2Name ?? "Player 2"
+  );
+  const [playerStats, setPlayerStats] = useState<PlayerStatsState>(() => 
+    getSavedPlayerStats() ?? {
+      player1: { shots: 0, totalTime: 0, shotTimes: [] },
+      player2: { shots: 0, totalTime: 0, shotTimes: [] }
+    }
+  );
   
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const warningTime = 20;
   const timeLimit = 25;
+
+  // Save player names whenever they change
+  useEffect(() => {
+    const dataToSave = { player1Name, player2Name };
+    console.log('Attempting to save names:', dataToSave);
+    localStorage.setItem('poolPlayerNames', JSON.stringify(dataToSave));
+  }, [player1Name, player2Name]);
+
+  useEffect(() => {
+    console.log('Attempting to save stats:', playerStats);
+    localStorage.setItem('poolPlayerStats', JSON.stringify(playerStats));
+  }, [playerStats]);
+
+  // Modify resetStats to also clear localStorage
+  const resetStats = () => {
+    pauseTimer();
+    setCurrentTime(0);
+    setInnings(0);
+    setPlayerStats({
+      player1: { shots: 0, totalTime: 0, shotTimes: [] },
+      player2: { shots: 0, totalTime: 0, shotTimes: [] }
+    });
+    // Clear localStorage
+    localStorage.removeItem('poolPlayerStats');
+    // Don't clear player names from storage - keep them even after reset
+  };
 
   const startTimer = () => {
     setIsRunning(true);
@@ -143,6 +197,12 @@ const switchPlayer = () => {
     setPlayerStats(prev => {
       const shotTime = currentTime;
       const updatedShotTimes = [...prev[playerKey].shotTimes, shotTime].sort((a, b) => b - a);
+      
+      // Increment innings only when Player 2 finishes
+      if (currentPlayer === 2) {
+      setInnings(prev => prev + 1);
+      } 
+      
       return {
         ...prev,
         [playerKey]: {
@@ -203,9 +263,9 @@ const switchPlayer = () => {
         {slicedTimes.map((time, index) => (
           <div key={index} 
             className={`rounded p-2 text-center text-sm ${
-              time >= timeLimit ? 'bg-red-50 text-red-600' : 
-              time >= warningTime ? 'bg-yellow-50 text-yellow-600' : 
-              'bg-blue-50'
+              time >= timeLimit ? 'bg-red-100 text-red-800' : 
+              time >= warningTime ? 'bg-yellow-100 text-yellow-800' : 
+              'bg-blue-100 text-blue-800'
             }`}
           >
             {time}s
@@ -218,15 +278,6 @@ const switchPlayer = () => {
         ))}
       </>
     );
-  };
-
-  const resetStats = () => {
-    pauseTimer();
-    setCurrentTime(0);
-    setPlayerStats({
-      player1: { shots: 0, totalTime: 0, shotTimes: [] },
-      player2: { shots: 0, totalTime: 0, shotTimes: [] }
-    });
   };
 
   const [isTimeOut, setIsTimeOut] = useState(false);
@@ -267,6 +318,8 @@ const switchPlayer = () => {
     }
     return 'bg-indigo-600 hover:bg-indigo-700';
   };
+
+  const [innings, setInnings] = useState(0);
 
   return (
     <div className="max-w-md mx-auto bg-gray-100 min-h-screen p-4 flex flex-col">
@@ -321,11 +374,11 @@ const switchPlayer = () => {
       </div>
 
       {/* Timer Display */}
-      <div className="flex-grow flex flex-col items-center justify-center bg-white shadow-lg mb-4">
+      <div className="flex-grow flex flex-col items-center justify-center bg-white shadow-lg mb-4 rounded-lg">
         <div 
           className={`font-bold transition-colors duration-300 ${getTimerColor()}`}
           style={{
-            fontSize: 'min(30vh, 50vw)',
+            fontSize: 'min(22.5vh, 37.5vw)',
             lineHeight: '1',
             padding: '0'
           }}
@@ -339,8 +392,7 @@ const switchPlayer = () => {
 
       {/* Control Buttons */}
       <div className="p-4 bg-gray-200">
-        {/* 
-        // Original Button Code - Keep for reference
+        {/* Top row buttons */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           <button
             onClick={isRunning ? pauseTimer : startTimer}
@@ -360,6 +412,7 @@ const switchPlayer = () => {
           </button>
         </div>
 
+        {/* Bottom row buttons */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           <button
             onClick={switchPlayer}
@@ -377,6 +430,7 @@ const switchPlayer = () => {
           </button>
         </div>
 
+        {/* Time Out Button */}
         <button
           onClick={toggleTimeOut}
           className={`h-16 rounded-lg flex items-center justify-between p-4 text-white font-bold w-full ${getTimeOutColor()}`}
@@ -387,59 +441,6 @@ const switchPlayer = () => {
           </div>
           {isTimeOut && (
             <div className={`text-xl ${timeOutTime >= timeOutWarning ? 'animate-pulse' : ''}`}>
-              {String(timeOutTime).padStart(2, '0')}s
-            </div>
-          )}
-        </button>
-        */}
-
-        {/* New Enhanced Mobile-Friendly Buttons */}
-        <div className="grid grid-cols-2 gap-3 mb-3">
-          <button
-            onClick={isRunning ? pauseTimer : startTimer}
-            className={`h-20 rounded-xl flex items-center justify-center gap-3 ${
-              isRunning ? 'bg-red-500 active:bg-red-700' : 'bg-green-500 active:bg-green-700'
-            } text-white font-bold w-full text-lg shadow-md active:shadow-sm transform active:scale-95 transition-all touch-manipulation`}
-          >
-            {isRunning ? <Pause size={28} /> : <Play size={28} />}
-            {isRunning ? 'Pause' : 'Start'}
-          </button>
-          <button
-            onClick={nextShot}
-            className="h-20 rounded-xl bg-orange-500 active:bg-orange-700 text-white font-bold flex items-center justify-center gap-3 w-full text-lg shadow-md active:shadow-sm transform active:scale-95 transition-all touch-manipulation"
-          >
-            <Timer size={28} />
-            Next Shot
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 mb-3">
-          <button
-            onClick={switchPlayer}
-            className="h-20 rounded-xl bg-purple-500 active:bg-purple-700 text-white font-bold flex items-center justify-center gap-3 w-full text-lg shadow-md active:shadow-sm transform active:scale-95 transition-all touch-manipulation"
-          >
-            <User size={28} />
-            Switch Player
-          </button>
-          <button
-            onClick={resetStats}
-            className="h-20 rounded-xl bg-gray-500 active:bg-gray-700 text-white font-bold flex items-center justify-center gap-3 w-full text-lg shadow-md active:shadow-sm transform active:scale-95 transition-all touch-manipulation"
-          >
-            <RotateCcw size={28} />
-            Reset
-          </button>
-        </div>
-
-        <button
-          onClick={toggleTimeOut}
-          className={`h-20 rounded-xl flex items-center justify-between px-6 text-white font-bold w-full text-lg shadow-md active:shadow-sm transform active:scale-95 transition-all touch-manipulation ${getTimeOutColor()}`}
-        >
-          <div className="flex items-center justify-center gap-3">
-            <Timer size={28} />
-            {isTimeOut ? "End Time Out" : "Time Out"}
-          </div>
-          {isTimeOut && (
-            <div className={`text-2xl ${timeOutTime >= timeOutWarning ? 'animate-pulse' : ''}`}>
               {String(timeOutTime).padStart(2, '0')}s
             </div>
           )}
@@ -505,6 +506,23 @@ const switchPlayer = () => {
             </div>
           </div>
         </div>
+
+        {/* Game Stats Section */}  
+      <div className="bg-white rounded-lg shadow p-4 mb-4 mt-4">
+        <div className="text-lg font-bold mb-2">Game Stats</div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-blue-50 p-3 rounded">
+            <div className="text-sm text-gray-600 mb-1">Total Innings</div>
+            <div className="text-2xl font-bold text-blue-600">{innings}</div>
+          </div>
+          <div className="bg-green-50 p-3 rounded">
+            <div className="text-sm text-gray-600 mb-1">Shots/Inning</div>
+            <div className="text-2xl font-bold text-green-600">
+              {innings === 0 ? '0' : ((playerStats.player1.shots + playerStats.player2.shots) / innings).toFixed(1)}
+            </div>
+          </div>
+        </div>
+      </div>
 
         {/* Footer */}
         <div className="text-center mt-4 text-gray-400 text-sm">
