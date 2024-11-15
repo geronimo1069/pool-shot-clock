@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, RotateCcw, Timer, User, Settings, Trophy } from 'lucide-react';
+import { Play, Pause, RotateCcw, Timer, User, Settings } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -11,13 +11,6 @@ import {
 } from "../components/ui/dialog";
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { cn } from "../lib/utils";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "./ui/alert-dialog";
 
 interface PlayerStats {
   shots: number;
@@ -103,12 +96,6 @@ const BallIcon = ({ number, className }: BallIconProps) => (
   </div>
 );
 
-// Add this interface with the existing interfaces
-interface WinsState {
-  player1: number;
-  player2: number;
-}
-
 const PoolShotClock = () => {
   const getSavedPlayerNames = () => {
     if (typeof window !== 'undefined') {
@@ -128,62 +115,18 @@ const PoolShotClock = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [currentPlayer, setCurrentPlayer] = useState(1);
-  const [player1Name, setPlayer1Name] = useState("Player 1");
-  const [player2Name, setPlayer2Name] = useState("Player 2");
-  const [playerStats, setPlayerStats] = useState<PlayerStatsState>({
-    player1: { shots: 0, totalTime: 0, shotTimes: [] },
-    player2: { shots: 0, totalTime: 0, shotTimes: [] }
-  });
-  
-  // Wins state and effects grouped together
-  const [wins, setWins] = useState<WinsState>({ player1: 0, player2: 0 });
-
-  useEffect(() => {
-    const savedWins = localStorage.getItem('poolWins');
-    if (savedWins) {
-      setWins(JSON.parse(savedWins));
+  const [player1Name, setPlayer1Name] = useState(() => 
+    getSavedPlayerNames()?.player1Name ?? "Player 1"
+  );
+  const [player2Name, setPlayer2Name] = useState(() => 
+    getSavedPlayerNames()?.player2Name ?? "Player 2"
+  );
+  const [playerStats, setPlayerStats] = useState<PlayerStatsState>(() => 
+    getSavedPlayerStats() ?? {
+      player1: { shots: 0, totalTime: 0, shotTimes: [] },
+      player2: { shots: 0, totalTime: 0, shotTimes: [] }
     }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('poolWins', JSON.stringify(wins));
-  }, [wins]);
-
-  useEffect(() => {
-    const savedNames = localStorage.getItem('poolPlayerNames');
-    if (savedNames) {
-      const names = JSON.parse(savedNames);
-      setPlayer1Name(names.player1Name);
-      setPlayer2Name(names.player2Name);
-    }
-  
-    const savedStats = localStorage.getItem('poolPlayerStats');
-    if (savedStats) {
-      setPlayerStats(JSON.parse(savedStats));
-    }
-  }, []); // Only runs once on mount
-
-  const handleWin = (winner: 'player1' | 'player2') => {
-    // Stop the timer
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = undefined;
-    }
-  
-    // Update wins
-    setWins(prev => ({
-      ...prev,
-      [winner]: prev[winner] + 1
-    }));
-  
-    // Reset timer and keep it paused
-    setCurrentTime(0);
-    setIsRunning(false);  // Keep timer paused
-  
-    // Set winner as current player and start their timer
-    setCurrentPlayer(winner === 'player1' ? 1 : 2);
-    
-  };
+  );
   
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const warningTime = 20;
@@ -210,17 +153,9 @@ const PoolShotClock = () => {
       player1: { shots: 0, totalTime: 0, shotTimes: [] },
       player2: { shots: 0, totalTime: 0, shotTimes: [] }
     });
-
-    // Reset wins
-    setWins({ player1: 0, player2: 0 });
-
     // Clear localStorage
     localStorage.removeItem('poolPlayerStats');
-    localStorage.removeItem('poolWins');
-    localStorage.removeItem('poolPlayerNames');
-
-    // Refresh the page
-    window.location.reload();
+    // Don't clear player names from storage - keep them even after reset
   };
 
   const startTimer = () => {
@@ -260,18 +195,17 @@ const nextShot = () => {
 };
   
 const switchPlayer = () => {
-  // First, stop the current timer
-  if (timerRef.current) {
-    clearInterval(timerRef.current);
-    timerRef.current = undefined;
-  }
-
-  // If timer was running, record the current time for the current player
+  // If timer is running, record the current time for the current player
   if (isRunning) {
     const playerKey = `player${currentPlayer}` as keyof PlayerStatsState;
     setPlayerStats(prev => {
       const shotTime = currentTime;
       const updatedShotTimes = [...prev[playerKey].shotTimes, shotTime].sort((a, b) => b - a);
+      
+      // Increment innings only when Player 2 finishes
+      if (currentPlayer === 2) {
+      setInnings(prev => prev + 1);
+      } 
       
       return {
         ...prev,
@@ -282,24 +216,17 @@ const switchPlayer = () => {
         }
       };
     });
-
-    // Increment innings only when Player 2 finishes
-    if (currentPlayer === 2) {
-      setInnings(prev => prev + 1);
-    }
   }
 
-  // Switch player
+  // Reset timer and switch player
+  setCurrentTime(0);
+  if (timerRef.current) clearInterval(timerRef.current);
   setCurrentPlayer(prev => prev === 1 ? 2 : 1);
   
-  // Reset timer and start it for the new player
-  setCurrentTime(0);
-  setIsRunning(true);  // Set running to true
-  timerRef.current = setInterval(() => {
-    setCurrentTime(prev => prev + 1);
-  }, 1000);
+  // Start the timer for the new player
+  startTimer();
 };
-
+  
   const getAverageTime = (player: number) => {
     const playerKey: PlayerKey = `player${player}` as PlayerKey;
     const stats = playerStats[playerKey];
@@ -398,11 +325,6 @@ const switchPlayer = () => {
 
   const [innings, setInnings] = useState(0);
 
-  // Save wins to localStorage when they change
-  useEffect(() => {
-    localStorage.setItem('poolWins', JSON.stringify(wins));
-  }, [wins]);
-
   return (
     <div className="max-w-md mx-auto bg-gray-100 min-h-screen p-4 flex flex-col">
       <div className="bg-blue-600 text-white p-4 shadow-lg rounded-lg mb-4">
@@ -472,9 +394,9 @@ const switchPlayer = () => {
         </div>
       </div>
 
-      {/* Updated Control Buttons Layout */}
+      {/* Control Buttons */}
       <div className="p-4 bg-gray-200">
-        {/* Start/Pause and Next Shot buttons */}
+        {/* Top row buttons */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           <button
             onClick={isRunning ? pauseTimer : startTimer}
@@ -494,7 +416,7 @@ const switchPlayer = () => {
           </button>
         </div>
 
-        {/* Switch Player and Rack Over buttons */}
+        {/* Bottom row buttons */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           <button
             onClick={switchPlayer}
@@ -503,102 +425,31 @@ const switchPlayer = () => {
             <User size={24} />
             Switch Player
           </button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <button 
-                onClick={() => {
-                  // Stop the timer immediately when Rack Over is clicked
-                  if (timerRef.current) {
-                    clearInterval(timerRef.current);
-                    timerRef.current = undefined;
-                 }
-                  setIsRunning(false);
-                }} 
-                className="h-16 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-bold flex items-center justify-center gap-2 w-full"
-              >
-                <Trophy size={24} />
-                Rack Over
-              </button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogTitle className="text-lg font-bold mb-4">
-                Who Won?
-              </AlertDialogTitle>
-              <div className="grid grid-cols-2 gap-4">
-                <AlertDialogAction
-                  onClick={() => handleWin('player1')}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
-                >
-                  {player1Name}
-                </AlertDialogAction>
-                <AlertDialogAction
-                  onClick={() => handleWin('player2')}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
-                >
-                  {player2Name}
-                </AlertDialogAction>
-              </div>
-            </AlertDialogContent>
-          </AlertDialog>
+          <button
+            onClick={resetStats}
+            className="h-16 rounded-lg bg-gray-500 hover:bg-gray-600 text-white font-bold flex items-center justify-center gap-2 w-full"
+          >
+            <RotateCcw size={24} />
+            Reset
+          </button>
         </div>
 
-        {/* Time Out and Reset buttons */}
-<div className="grid grid-cols-2 gap-4 mb-4">
-  <button
-    onClick={toggleTimeOut}
-    className={`h-16 rounded-lg flex items-center justify-between px-4 text-white font-bold w-full ${getTimeOutColor()}`}
-  >
-    <div className="flex items-center justify-center gap-2">
-      <Timer size={24} />
-      {isTimeOut ? "End Time Out" : "Time Out"}
-    </div>
-    {isTimeOut && (
-      <div className={`text-xl ${timeOutTime >= timeOutWarning ? 'animate-pulse' : ''}`}>
-        {String(timeOutTime).padStart(2, '0')}s
+        {/* Time Out Button */}
+        <button
+          onClick={toggleTimeOut}
+          className={`h-16 rounded-lg flex items-center justify-between p-4 text-white font-bold w-full ${getTimeOutColor()}`}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <Timer size={24} />
+            {isTimeOut ? "End Time Out" : "Time Out"}
+          </div>
+          {isTimeOut && (
+            <div className={`text-xl ${timeOutTime >= timeOutWarning ? 'animate-pulse' : ''}`}>
+              {String(timeOutTime).padStart(2, '0')}s
+            </div>
+          )}
+        </button>
       </div>
-    )}
-  </button>
-  <AlertDialog>
-    <AlertDialogTrigger asChild>
-      <button className="h-16 rounded-lg bg-gray-500 hover:bg-gray-600 text-white font-bold flex items-center justify-center gap-2 w-full">
-        <RotateCcw size={24} />
-        Reset
-      </button>
-    </AlertDialogTrigger>
-    <AlertDialogContent>
-  <AlertDialogTitle className="text-xl font-bold mb-4 text-red-600">
-    Reset Everything?
-  </AlertDialogTitle>
-  <div className="mb-6 text-gray-700">
-    This will reset everything:
-    <ul className="list-disc ml-6 mt-2 space-y-1">
-      <li>Player names</li>
-      <li>Match wins ({wins.player1}-{wins.player2})</li>
-      <li>All player statistics</li>
-      <li>Shot times and averages</li>
-      <li>Innings count</li>
-    </ul>
-    <div className="mt-4 text-red-600 font-semibold">
-      This action cannot be undone.
-    </div>
-  </div>
-  <div className="grid grid-cols-2 gap-4">
-    <AlertDialogAction
-      onClick={() => {/* do nothing, just close dialog */}}
-      className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
-    >
-      Cancel
-    </AlertDialogAction>
-    <AlertDialogAction
-      onClick={resetStats}
-      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
-    >
-      Reset Everything
-    </AlertDialogAction>
-  </div>
-    </AlertDialogContent>
-  </AlertDialog>
-</div>
 
       {/* Player Stats */}
       <div className="p-4 bg-gray-200">
@@ -660,22 +511,22 @@ const switchPlayer = () => {
           </div>
         </div>
 
-        {/* Updated Game Stats Section with Wins */}
-        <div className="bg-white rounded-lg shadow p-4 mb-4">
-          <div className="text-lg font-bold mb-2">Game Stats</div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-blue-50 p-3 rounded">
-              <div className="text-sm text-gray-600 mb-1">Total Innings</div>
-              <div className="text-2xl font-bold text-blue-600">{innings}</div>
-            </div>
-            <div className="bg-green-50 p-3 rounded">
-              <div className="text-sm text-gray-600 mb-1">Wins</div>
-              <div className="text-2xl font-bold text-green-600">
-                {wins.player1} / {wins.player2}
-              </div>
+        {/* Game Stats Section */}  
+      <div className="bg-white rounded-lg shadow p-4 mb-4 mt-4">
+        <div className="text-lg font-bold mb-2">Game Stats</div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-blue-50 p-3 rounded">
+            <div className="text-sm text-gray-600 mb-1">Total Innings</div>
+            <div className="text-2xl font-bold text-blue-600">{innings}</div>
+          </div>
+          <div className="bg-green-50 p-3 rounded">
+            <div className="text-sm text-gray-600 mb-1">Shots/Inning</div>
+            <div className="text-2xl font-bold text-green-600">
+              {innings === 0 ? '0' : ((playerStats.player1.shots + playerStats.player2.shots) / innings).toFixed(1)}
             </div>
           </div>
         </div>
+      </div>
 
         {/* Footer */}
         <div className="text-center mt-4 text-gray-400 text-sm">
@@ -683,7 +534,6 @@ const switchPlayer = () => {
         </div>
       </div>
     </div>
-  </div>
   );
 };
 
