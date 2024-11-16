@@ -19,10 +19,6 @@ import {
   AlertDialogTrigger,
 } from "./ui/alert-dialog";
 
-import PlayersStatsDialog from './PlayersStatsDialog';
-
-type PlayerNumber = 1 | 2;
-
 interface PlayerStats {
   shots: number;
   totalTime: number;
@@ -45,12 +41,6 @@ interface GameState {
   playerStats: PlayerStatsState;
   isTimeOut: boolean;
   timeOutTime: number;
-}
-
-// Add this interface with the existing interfaces
-interface WinsState {
-  player1: number;
-  player2: number;
 }
 
 interface BallIconProps {
@@ -113,6 +103,12 @@ const BallIcon = ({ number, className }: BallIconProps) => (
   </div>
 );
 
+// Add this interface with the existing interfaces
+interface WinsState {
+  player1: number;
+  player2: number;
+}
+
 const PoolShotClock = () => {
   const getSavedPlayerNames = () => {
     if (typeof window !== 'undefined') {
@@ -138,9 +134,6 @@ const PoolShotClock = () => {
     player1: { shots: 0, totalTime: 0, shotTimes: [] },
     player2: { shots: 0, totalTime: 0, shotTimes: [] }
   });
-
-  const [selectedPlayer, setSelectedPlayer] = useState<PlayerNumber>(1);
-  const [statsDialogOpen, setStatsDialogOpen] = useState(false);
   
   // Wins state and effects grouped together
   const [wins, setWins] = useState<WinsState>({ player1: 0, player2: 0 });
@@ -249,7 +242,7 @@ const nextShot = () => {
   const playerKey: PlayerKey = currentPlayer === 1 ? 'player1' : 'player2';
   setPlayerStats(prev => {
       const shotTime = currentTime;
-      const updatedShotTimes = [shotTime, ...prev[playerKey].shotTimes];
+      const updatedShotTimes = [...prev[playerKey].shotTimes, shotTime].sort((a, b) => b - a);
       return {
           ...prev,
           [playerKey]: {
@@ -278,7 +271,7 @@ const switchPlayer = () => {
     const playerKey = `player${currentPlayer}` as keyof PlayerStatsState;
     setPlayerStats(prev => {
       const shotTime = currentTime;
-      const updatedShotTimes = [shotTime, ...prev[playerKey].shotTimes];
+      const updatedShotTimes = [...prev[playerKey].shotTimes, shotTime].sort((a, b) => b - a);
       
       return {
         ...prev,
@@ -327,8 +320,8 @@ const switchPlayer = () => {
     return currentPlayer === 1 ? player1Name : player2Name;
   };
 
-  const getRecentShots = (playerKey: PlayerKey) => {
-    return playerStats[playerKey].shotTimes.slice(0, 12);
+  const getTopLongestTimes = (playerKey: PlayerKey) => {
+    return playerStats[playerKey].shotTimes.slice(0, 10);
   };
 
   const getShotCounts = (playerKey: PlayerKey) => {
@@ -611,13 +604,7 @@ const switchPlayer = () => {
       <div className="p-4 bg-gray-200">
         <div className="grid grid-cols-2 gap-4 mb-4">
           {/* Player 1 Stats */}
-          <button 
-            onClick={() => {
-              setSelectedPlayer(1);
-              setStatsDialogOpen(true);
-            }}
-            className="p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition-colors w-full text-left"
-          >
+          <div className="p-4 bg-white rounded-lg shadow">
             <div className="font-bold mb-2">{player1Name}</div>
             <div>Shots: {playerStats.player1.shots}</div>
             <div className="mb-2">Avg: {getAverageTime(1)}s</div>
@@ -634,24 +621,18 @@ const switchPlayer = () => {
             </div>
             <div className="text-sm font-medium text-gray-600 mt-2">Longest Times:</div>
             <div className="grid grid-cols-4 gap-1 mt-1">
-              {renderTimeRow(getRecentShots('player1'), 0, 4)}
+              {renderTimeRow(getTopLongestTimes('player1'), 0, 4)}
             </div>
             <div className="grid grid-cols-4 gap-1 mt-1">
-              {renderTimeRow(getRecentShots('player1'), 4, 8)}
+              {renderTimeRow(getTopLongestTimes('player1'), 4, 8)}
             </div>
             <div className="grid grid-cols-4 gap-1 mt-1">
-              {renderTimeRow(getRecentShots('player1'), 8, 12)}
+              {renderTimeRow(getTopLongestTimes('player1'), 8, 12)}
             </div>
-          </button>
+          </div>
 
           {/* Player 2 Stats */}
-          <button 
-            onClick={() => {
-              setSelectedPlayer(2);  {/* This was set to 1, changed to 2 */}
-              setStatsDialogOpen(true);
-            }}
-            className="p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition-colors w-full text-left"
-          >
+          <div className="p-4 bg-white rounded-lg shadow">
             <div className="font-bold mb-2">{player2Name}</div>
             <div>Shots: {playerStats.player2.shots}</div>
             <div className="mb-2">Avg: {getAverageTime(2)}s</div>
@@ -668,15 +649,15 @@ const switchPlayer = () => {
             </div>
             <div className="text-sm font-medium text-gray-600 mt-2">Longest Times:</div>
             <div className="grid grid-cols-4 gap-1 mt-1">
-              {renderTimeRow(getRecentShots('player2'), 0, 4)}
+              {renderTimeRow(getTopLongestTimes('player2'), 0, 4)}
             </div>
             <div className="grid grid-cols-4 gap-1 mt-1">
-             {renderTimeRow(getRecentShots('player2'), 4, 8)}
+              {renderTimeRow(getTopLongestTimes('player2'), 4, 8)}
             </div>
             <div className="grid grid-cols-4 gap-1 mt-1">
-              {renderTimeRow(getRecentShots('player2'), 8, 12)}
+              {renderTimeRow(getTopLongestTimes('player2'), 8, 12)}
             </div>
-          </button>
+          </div>
         </div>
 
         {/* Updated Game Stats Section with Wins */}
@@ -690,29 +671,20 @@ const switchPlayer = () => {
             <div className="bg-green-50 p-3 rounded">
               <div className="text-sm text-gray-600 mb-1">Wins</div>
               <div className="text-2xl font-bold text-green-600">
-              {wins.player1} / {wins.player2}
+                {wins.player1} / {wins.player2}
               </div>
             </div>
           </div>
         </div>
-      </div>
 
         {/* Footer */}
         <div className="text-center mt-4 text-gray-400 text-sm">
           Designed by: J. Girardi
         </div>
       </div>
-      <PlayersStatsDialog 
-        player={selectedPlayer}
-        isOpen={statsDialogOpen}
-        onClose={() => setStatsDialogOpen(false)}
-        playerStats={playerStats}
-        playerName={selectedPlayer === 1 ? player1Name : player2Name}
-      />
     </div>
+  </div>
   );
 };
-
-
 
 export default PoolShotClock;
