@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#2563eb" rx="128" />
+  
+  <!-- 8-ball -->
+  <g transform="translate(96, 96) scale(1.6)">
+    <!-- Ball background -->
+    <defs>
+      <linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="rgba(255,255,255,0.2)" />
+        <stop offset="50%" stopColor="rgba(255,255,255,0)" />
+      </linearGradient>
+    </defs>
+    
+    <!-- Main ball -->
+    <circle cx="100" cy="100" r="96" fill="black" stroke="white" strokeWidth="4"/>
+    
+    <!-- Ball shine -->
+    <circle cx="100" cy="100" r="96" fill="url(#shine)" />
+    
+    <!-- Number circle -->
+    <circle cx="100" cy="100" r="44" fill="white"/>
+    
+    <!-- Number text -->
+    <text
+      x="100"
+      y="100"
+      dominantBaseline="middle"
+      textAnchor="middle"
+      fill="black"
+      fontSize="52"
+      fontWeight="bold"
+      fontFamily="Arial"
+    >
+      8
+    </text>
+  </g>
+</svg>

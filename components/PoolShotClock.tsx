@@ -631,99 +631,97 @@ const switchPlayer = () => {
 </div>
 
       {/* Player Stats */}
-      <div className="p-4 bg-gray-200">
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          {/* Player 1 Stats */}
-          <button 
-            onClick={() => {
-              setSelectedPlayer(1);
-              setStatsDialogOpen(true);
-            }}
-            className="p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition-colors w-full text-left"
-          >
-            <div className="font-bold mb-2">{player1Name}</div>
-            <div>Shots: {playerStats.player1.shots}</div>
-            <div className="mb-2">Avg: {getAverageTime(1)}s</div>
-            <div className="flex justify-center gap-2 mb-2">
-              <span className="text-red-600 bg-red-50 px-2 py-1 rounded text-sm">
-                {getShotCounts('player1').red}
-              </span>
-              <span className="text-yellow-600 bg-yellow-50 px-2 py-1 rounded text-sm">
-                {getShotCounts('player1').yellow}
-              </span>
-              <span className="text-blue-600 bg-blue-50 px-2 py-1 rounded text-sm">
-                {getShotCounts('player1').blue}
-              </span>
-            </div>
-            <div className="text-sm font-medium text-gray-600 mt-2">Longest Times:</div>
-            <div className="grid grid-cols-4 gap-1 mt-1">
-              {renderTimeRow(getRecentShots('player1'), 0, 4)}
-            </div>
-            <div className="grid grid-cols-4 gap-1 mt-1">
-              {renderTimeRow(getRecentShots('player1'), 4, 8)}
-            </div>
-            <div className="grid grid-cols-4 gap-1 mt-1">
-              {renderTimeRow(getRecentShots('player1'), 8, 12)}
-            </div>
-          </button>
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        {/* Player 1 Stats */}
+        <button 
+          onClick={() => {
+            setSelectedPlayer(1);
+            setStatsDialogOpen(true);
+          }}
+          className="p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition-colors w-full text-left"
+        >
+          <div className="font-bold mb-2">{player1Name}</div>
+          <div>Shots: {playerStats.player1.shots}</div>
+          <div className="mb-2">Avg: {getAverageTime(1)}s</div>
+          <div className="flex justify-center gap-2 mb-2">
+            <span className="text-red-600 bg-red-50 px-2 py-1 rounded text-sm">
+              {getShotCounts('player1').red}
+            </span>
+            <span className="text-yellow-600 bg-yellow-50 px-2 py-1 rounded text-sm">
+              {getShotCounts('player1').yellow}
+            </span>
+            <span className="text-blue-600 bg-blue-50 px-2 py-1 rounded text-sm">
+              {getShotCounts('player1').blue}
+            </span>
+          </div>
+          <div className="text-sm font-medium text-gray-600 mt-2">Longest Times:</div>
+          <div className="grid grid-cols-4 gap-1 mt-1">
+            {renderTimeRow(getRecentShots('player1'), 0, 4)}
+          </div>
+          <div className="grid grid-cols-4 gap-1 mt-1">
+            {renderTimeRow(getRecentShots('player1'), 4, 8)}
+          </div>
+          <div className="grid grid-cols-4 gap-1 mt-1">
+            {renderTimeRow(getRecentShots('player1'), 8, 12)}
+          </div>
+        </button>
 
-          {/* Player 2 Stats */}
-          <button 
-            onClick={() => {
-              setSelectedPlayer(2);  {/* This was set to 1, changed to 2 */}
-              setStatsDialogOpen(true);
-            }}
-            className="p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition-colors w-full text-left"
-          >
-            <div className="font-bold mb-2">{player2Name}</div>
-            <div>Shots: {playerStats.player2.shots}</div>
-            <div className="mb-2">Avg: {getAverageTime(2)}s</div>
-            <div className="flex justify-center gap-2 mb-2">
-              <span className="text-red-600 bg-red-50 px-2 py-1 rounded text-sm">
-                {getShotCounts('player2').red}
-              </span>
-              <span className="text-yellow-600 bg-yellow-50 px-2 py-1 rounded text-sm">
-                {getShotCounts('player2').yellow}
-              </span>
-              <span className="text-blue-600 bg-blue-50 px-2 py-1 rounded text-sm">
-                {getShotCounts('player2').blue}
-              </span>
-            </div>
-            <div className="text-sm font-medium text-gray-600 mt-2">Longest Times:</div>
-            <div className="grid grid-cols-4 gap-1 mt-1">
-              {renderTimeRow(getRecentShots('player2'), 0, 4)}
-            </div>
-            <div className="grid grid-cols-4 gap-1 mt-1">
-             {renderTimeRow(getRecentShots('player2'), 4, 8)}
-            </div>
-            <div className="grid grid-cols-4 gap-1 mt-1">
-              {renderTimeRow(getRecentShots('player2'), 8, 12)}
-            </div>
-          </button>
-        </div>
+        {/* Player 2 Stats */}
+        <button 
+          onClick={() => {
+            setSelectedPlayer(2);
+            setStatsDialogOpen(true);
+          }}
+          className="p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition-colors w-full text-left"
+        >
+          <div className="font-bold mb-2">{player2Name}</div>
+          <div>Shots: {playerStats.player2.shots}</div>
+          <div className="mb-2">Avg: {getAverageTime(2)}s</div>
+          <div className="flex justify-center gap-2 mb-2">
+            <span className="text-red-600 bg-red-50 px-2 py-1 rounded text-sm">
+              {getShotCounts('player2').red}
+            </span>
+            <span className="text-yellow-600 bg-yellow-50 px-2 py-1 rounded text-sm">
+              {getShotCounts('player2').yellow}
+            </span>
+            <span className="text-blue-600 bg-blue-50 px-2 py-1 rounded text-sm">
+              {getShotCounts('player2').blue}
+            </span>
+          </div>
+          <div className="text-sm font-medium text-gray-600 mt-2">Longest Times:</div>
+          <div className="grid grid-cols-4 gap-1 mt-1">
+            {renderTimeRow(getRecentShots('player2'), 0, 4)}
+          </div>
+          <div className="grid grid-cols-4 gap-1 mt-1">
+            {renderTimeRow(getRecentShots('player2'), 4, 8)}
+          </div>
+          <div className="grid grid-cols-4 gap-1 mt-1">
+            {renderTimeRow(getRecentShots('player2'), 8, 12)}
+          </div>
+        </button>
+      </div>
 
-        {/* Updated Game Stats Section with Wins */}
-        <div className="bg-white rounded-lg shadow p-4 mb-4">
-          <div className="text-lg font-bold mb-2">Game Stats</div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-blue-50 p-3 rounded">
-              <div className="text-sm text-gray-600 mb-1">Total Innings</div>
-              <div className="text-2xl font-bold text-blue-600">{innings}</div>
-            </div>
-            <div className="bg-green-50 p-3 rounded">
-              <div className="text-sm text-gray-600 mb-1">Wins</div>
-              <div className="text-2xl font-bold text-green-600">
+      {/* Game Stats Section */}
+      <div className="bg-white rounded-lg shadow p-4">
+        <div className="text-lg font-bold mb-2">Game Stats</div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-blue-50 p-3 rounded">
+            <div className="text-sm text-gray-600 mb-1">Total Innings</div>
+            <div className="text-2xl font-bold text-blue-600">{innings}</div>
+          </div>
+          <div className="bg-green-50 p-3 rounded">
+            <div className="text-sm text-gray-600 mb-1">Wins</div>
+            <div className="text-2xl font-bold text-green-600">
               {wins.player1} / {wins.player2}
-              </div>
             </div>
           </div>
         </div>
       </div>
 
-        {/* Footer */}
-        <div className="text-center mt-4 text-gray-400 text-sm">
-          Designed by: J. Girardi
-        </div>
+      {/* Footer */}
+      <div className="text-center mt-4 text-gray-400 text-sm">
+        Designed by: J. Girardi
+      </div>
       </div>
       <PlayersStatsDialog 
         player={selectedPlayer}
