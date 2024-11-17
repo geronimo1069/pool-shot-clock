@@ -193,8 +193,8 @@ const PoolShotClock = () => {
   };
   
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-  const warningTime = 20;
-  const timeLimit = 25;
+  const warningTime = 25;
+  const timeLimit = 35;
 
   // Save player names whenever they change
   useEffect(() => {
@@ -410,6 +410,29 @@ const switchPlayer = () => {
     localStorage.setItem('poolWins', JSON.stringify(wins));
   }, [wins]);
 
+  const handleDeleteShot = (player: PlayerNumber, shotIndex: number) => {
+    setPlayerStats(prev => {
+      const playerKey = `player${player}` as PlayerKey;
+      const playerStats = prev[playerKey];
+      
+      // Get the time that's being deleted to subtract from total
+      const timeToDelete = playerStats.shotTimes[shotIndex];
+      
+      // Create new shot times array without the deleted shot
+      const newShotTimes = [...playerStats.shotTimes];
+      newShotTimes.splice(shotIndex, 1);
+      
+      return {
+        ...prev,
+        [playerKey]: {
+          shots: playerStats.shots - 1,
+          totalTime: playerStats.totalTime - timeToDelete,
+          shotTimes: newShotTimes
+        }
+      };
+    });
+  };
+
   return (
     <div className="max-w-md mx-auto bg-gray-100 min-h-screen p-4 flex flex-col">
       <div className="bg-blue-600 text-white p-4 shadow-lg rounded-lg mb-4">
@@ -566,45 +589,45 @@ const switchPlayer = () => {
     )}
   </button>
   <AlertDialog>
-    <AlertDialogTrigger asChild>
-      <button className="h-16 rounded-lg bg-gray-500 hover:bg-gray-600 text-white font-bold flex items-center justify-center gap-2 w-full">
-        <RotateCcw size={24} />
-        Reset
-      </button>
-    </AlertDialogTrigger>
-    <AlertDialogContent>
-  <AlertDialogTitle className="text-xl font-bold mb-4 text-red-600">
-    Reset Everything?
-  </AlertDialogTitle>
-  <div className="mb-6 text-gray-700">
-    This will reset everything:
-    <ul className="list-disc ml-6 mt-2 space-y-1">
-      <li>Player names</li>
-      <li>Match wins ({wins.player1}-{wins.player2})</li>
-      <li>All player statistics</li>
-      <li>Shot times and averages</li>
-      <li>Innings count</li>
-    </ul>
-    <div className="mt-4 text-red-600 font-semibold">
-      This action cannot be undone.
+  <AlertDialogTrigger asChild>
+    <button className="h-16 rounded-lg bg-gray-500 hover:bg-gray-600 text-white font-bold flex items-center justify-center gap-2 w-full">
+      <RotateCcw size={24} />
+      Reset
+    </button>
+  </AlertDialogTrigger>
+  <AlertDialogContent className="bg-white">
+    <AlertDialogTitle className="text-xl font-bold mb-4 text-red-600">
+      Reset Everything?
+    </AlertDialogTitle>
+    <div className="mb-6 text-gray-700">
+      This will reset everything:
+      <ul className="list-disc ml-6 mt-2 space-y-1">
+        <li>Player names</li>
+        <li>Match wins ({wins.player1}-{wins.player2})</li>
+        <li>All player statistics</li>
+        <li>Shot times and averages</li>
+        <li>Innings count</li>
+      </ul>
+      <div className="mt-4 text-red-600 font-semibold">
+        This action cannot be undone.
+      </div>
     </div>
-  </div>
-  <div className="grid grid-cols-2 gap-4">
-    <AlertDialogAction
-      onClick={() => {/* do nothing, just close dialog */}}
-      className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
-    >
-      Cancel
-    </AlertDialogAction>
-    <AlertDialogAction
-      onClick={resetStats}
-      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
-    >
-      Reset Everything
-    </AlertDialogAction>
-  </div>
-    </AlertDialogContent>
-  </AlertDialog>
+    <div className="grid grid-cols-2 gap-4">
+      <AlertDialogAction
+        onClick={() => {/* do nothing, just close dialog */}}
+        className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
+      >
+        Cancel
+      </AlertDialogAction>
+      <AlertDialogAction
+        onClick={resetStats}
+        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
+      >
+        Reset Everything
+      </AlertDialogAction>
+    </div>
+  </AlertDialogContent>
+</AlertDialog>
 </div>
 
       {/* Player Stats */}
@@ -708,6 +731,7 @@ const switchPlayer = () => {
         onClose={() => setStatsDialogOpen(false)}
         playerStats={playerStats}
         playerName={selectedPlayer === 1 ? player1Name : player2Name}
+        onDeleteShot={handleDeleteShot}
       />
     </div>
   );

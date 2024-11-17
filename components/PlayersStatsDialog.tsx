@@ -24,24 +24,32 @@ interface PlayersStatsDialogProps {
   onClose: () => void;
   playerStats: PlayerStatsState;
   playerName: string;
+  onDeleteShot: (player: PlayerNumber, shotIndex: number) => void;
 }
+
+interface DeleteButtonProps {
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
+}
+
+const warningTime = 25;
+const timeLimit = 35;
 
 const PlayersStatsDialog = ({ 
   player, 
   isOpen, 
   onClose, 
   playerStats, 
-  playerName 
+  playerName,
+  onDeleteShot
 }: PlayersStatsDialogProps) => {
   const stats = playerStats[`player${player}`];
   const shotTimes = stats.shotTimes;
 
-  // Calculate time distributions
   const timeRanges = [
     { min: 0, max: 15, label: '0-15s', color: 'bg-green-100 text-green-800' },
-    { min: 15, max: 30, label: '15-30s', color: 'bg-blue-100 text-blue-800' },
-    { min: 30, max: 40, label: '30-40s', color: 'bg-yellow-100 text-yellow-800' },
-    { min: 40, max: Infinity, label: '40s+', color: 'bg-red-100 text-red-800' }
+    { min: 15, max: 25, label: '15-25s', color: 'bg-blue-100 text-blue-800' },
+    { min: 25, max: 35, label: '25-35s', color: 'bg-yellow-100 text-yellow-800' },
+    { min: 35, max: Infinity, label: '35s+', color: 'bg-red-100 text-red-800' }
   ];
 
   const timeDistribution = timeRanges.map(range => ({
@@ -50,13 +58,11 @@ const PlayersStatsDialog = ({
     color: range.color
   }));
 
-  // Prepare data for the line chart
   const chartData = shotTimes.map((time, index) => ({
     shot: index + 1,
     time: time
-  })).reverse(); // Most recent shots first
+  })).reverse();
 
-  // Calculate statistics
   const averageTime = stats.shots > 0 ? (stats.totalTime / stats.shots).toFixed(1) : 0;
   const maxTime = Math.max(...shotTimes);
   const minTime = Math.min(...shotTimes);
@@ -64,62 +70,70 @@ const PlayersStatsDialog = ({
     ? shotTimes.slice().sort((a, b) => a - b)[Math.floor(shotTimes.length / 2)]
     : 0;
 
+  const DeleteButton: React.FC<DeleteButtonProps> = ({ onClick }) => (
+    <button
+      onClick={onClick}
+      className="absolute top-0 right-0 -mt-1 -mr-1 bg-red-100 hover:bg-red-200 text-red-600 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+      title="Delete shot"
+    >
+      <X className="h-3 w-3" />
+    </button>
+  );
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white">
         <button
-         onClick={onClose}
-            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+          onClick={onClose}
+          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
         >
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
         </button>
 
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+          <DialogTitle className="text-2xl font-bold flex items-center gap-2 text-gray-900">
             <Clock className="h-6 w-6" />
             {playerName}'s Detailed Statistics
           </DialogTitle>
         </DialogHeader>
 
-        {/* Key Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Card className="bg-blue-50">
+          <Card className="bg-blue-50 border-0">
             <CardContent className="p-4">
               <div className="text-sm text-blue-600 mb-1">Total Shots</div>
-              <div className="text-2xl font-bold">{stats.shots}</div>
+              <div className="text-2xl font-bold text-blue-800">{stats.shots}</div>
             </CardContent>
           </Card>
-          <Card className="bg-green-50">
+          <Card className="bg-green-50 border-0">
             <CardContent className="p-4">
               <div className="text-sm text-green-600 mb-1">Average Time</div>
-              <div className="text-2xl font-bold">{averageTime}s</div>
+              <div className="text-2xl font-bold text-green-800">{averageTime}s</div>
             </CardContent>
           </Card>
-          <Card className="bg-yellow-50">
+          <Card className="bg-yellow-50 border-0">
             <CardContent className="p-4">
               <div className="text-sm text-yellow-600 mb-1">Median Time</div>
-              <div className="text-2xl font-bold">{medianTime}s</div>
+              <div className="text-2xl font-bold text-yellow-800">{medianTime}s</div>
             </CardContent>
           </Card>
-          <Card className="bg-purple-50">
+          <Card className="bg-purple-50 border-0">
             <CardContent className="p-4">
               <div className="text-sm text-purple-600 mb-1">Time Range</div>
-              <div className="text-2xl font-bold">{minTime}s - {maxTime}s</div>
+              <div className="text-2xl font-bold text-purple-800">{minTime}s - {maxTime}s</div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Shot Time Distribution */}
-        <Card className="mb-6">
+        <Card className="mb-6 border border-gray-200 bg-white">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2 text-gray-900">
               <Timer className="h-5 w-5" />
               Shot Time Distribution
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {timeDistribution.map((dist, i) => (
                 <div key={i} className={`${dist.color} rounded-lg p-4`}>
                   <div className="text-2xl font-bold">{dist.count}</div>
@@ -130,41 +144,47 @@ const PlayersStatsDialog = ({
           </CardContent>
         </Card>
 
-        {/* Complete Shot History */}
-<Card>
-  <CardHeader>
-    <CardTitle className="text-lg font-semibold flex items-center gap-2">
-      <CheckCircle2 className="h-5 w-5" />
-      Complete Shot History
-    </CardTitle>
-  </CardHeader>
-  <CardContent>
-    <div className="max-h-40 overflow-y-auto border rounded-lg p-2">
-      <div className="grid grid-cols-8 md:grid-cols-12 gap-1">
-        {shotTimes.map((time, index) => (
-          <div
-            key={index}
-            className={`p-1 rounded text-center text-xs ${
-              time >= 25 ? 'bg-red-100 text-red-800' :
-              time >= 20 ? 'bg-yellow-100 text-yellow-800' :
-              'bg-blue-100 text-blue-800'
-            }`}
-          >
-            {time}s
-          </div>
-        ))}
-      </div>
-    </div>
-  </CardContent>
-</Card>
+        <Card className="border border-gray-200 bg-white">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold flex items-center gap-2 text-gray-900">
+              <CheckCircle2 className="h-5 w-5" />
+              Complete Shot History
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="max-h-40 overflow-y-auto border rounded-lg p-2 bg-white">
+              <div className="grid grid-cols-8 md:grid-cols-12 gap-1">
+                {shotTimes.map((time, index) => (
+                  <div
+                    key={index}
+                    className={`relative group p-1 rounded text-center text-xs ${
+                      time >= timeLimit ? 'bg-red-100 text-red-800' :
+                      time >= warningTime ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-blue-100 text-blue-800'
+                    }`}
+                  >
+                    {time}s
+                    <DeleteButton 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteShot(player, index);
+                      }} 
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="mt-6 flex justify-end">
-            <button
+          <button
             onClick={onClose}
             className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-            >
+          >
             <X className="h-4 w-4" />
             Go Back
-            </button>
+          </button>
         </div>
       </DialogContent>
     </Dialog>
