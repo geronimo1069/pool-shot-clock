@@ -1,5 +1,6 @@
 "use client";
 
+import { useSession, signIn, signOut } from 'next-auth/react';
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause, RotateCcw, Timer, User, Settings, Trophy } from 'lucide-react';
 import {
@@ -8,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from "../components/ui/dialog";
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { cn } from "../lib/utils";
@@ -114,6 +116,27 @@ const BallIcon = ({ number, className }: BallIconProps) => (
 );
 
 const PoolShotClock = () => {
+  const { data: session, status } = useSession();
+  
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const [currentPlayer, setCurrentPlayer] = useState(1);
+  const [player1Name, setPlayer1Name] = useState("Player 1");
+  const [player2Name, setPlayer2Name] = useState("Player 2");
+  const [playerStats, setPlayerStats] = useState<PlayerStatsState>({
+    player1: { shots: 0, totalTime: 0, shotTimes: [] },
+    player2: { shots: 0, totalTime: 0, shotTimes: [] }
+  });
+
+  const [selectedPlayer, setSelectedPlayer] = useState<PlayerNumber>(1);
+  const [statsDialogOpen, setStatsDialogOpen] = useState(false);
+  const [wins, setWins] = useState<WinsState>({ player1: 0, player2: 0 });
+  
+  const [isTimeOut, setIsTimeOut] = useState(false);
+  const [timeOutTime, setTimeOutTime] = useState(0);
+  const timeOutWarning = 55;
+  const timeOutLimit = 60;
+  
   const getSavedPlayerNames = () => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('poolPlayerNames');
@@ -129,22 +152,7 @@ const PoolShotClock = () => {
     }
     return null;
   };
-  const [currentTime, setCurrentTime] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-  const [currentPlayer, setCurrentPlayer] = useState(1);
-  const [player1Name, setPlayer1Name] = useState("Player 1");
-  const [player2Name, setPlayer2Name] = useState("Player 2");
-  const [playerStats, setPlayerStats] = useState<PlayerStatsState>({
-    player1: { shots: 0, totalTime: 0, shotTimes: [] },
-    player2: { shots: 0, totalTime: 0, shotTimes: [] }
-  });
-
-  const [selectedPlayer, setSelectedPlayer] = useState<PlayerNumber>(1);
-  const [statsDialogOpen, setStatsDialogOpen] = useState(false);
   
-  // Wins state and effects grouped together
-  const [wins, setWins] = useState<WinsState>({ player1: 0, player2: 0 });
-
   useEffect(() => {
     const savedWins = localStorage.getItem('poolWins');
     if (savedWins) {
@@ -364,11 +372,6 @@ const switchPlayer = () => {
     );
   };
 
-  const [isTimeOut, setIsTimeOut] = useState(false);
-  const [timeOutTime, setTimeOutTime] = useState(0);
-  const timeOutWarning = 55;
-  const timeOutLimit = 60;
-
   const toggleTimeOut = () => {
     if (!isTimeOut) {
       // Starting time out
@@ -433,6 +436,21 @@ const switchPlayer = () => {
     });
   };
 
+  if (!session) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <h1 className="text-2xl font-bold">Welcome to Pocket Pace</h1>
+        <p className="text-gray-600">Please sign in to continue</p>
+        <button
+          onClick={() => signIn('google')}
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+        >
+          Sign in with Google
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-md mx-auto bg-gray-100 min-h-screen p-4 flex flex-col">
       <div className="bg-blue-600 text-white p-4 shadow-lg rounded-lg mb-4">
@@ -448,34 +466,62 @@ const switchPlayer = () => {
                 <Settings size={24} />
               </button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent>
               <DialogHeader>
-                <DialogTitle>Player Settings</DialogTitle>
-              </DialogHeader>
-              <form className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <label htmlFor="player1" className="text-right font-medium">
-                    Player 1
-                  </label>
-                  <input
-                    id="player1"
-                    value={player1Name}
-                    onChange={(e) => setPlayer1Name(e.target.value)}
-                    className="col-span-3 flex h-10 rounded-md border border-input bg-background px-3 py-2"
-                    placeholder="Enter player 1 name"
-                  />
+                <div className="flex items-center justify-between">
+                  <DialogTitle>Player Settings</DialogTitle>
+                  <DialogClose className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors text-sm font-medium">
+                  Return
+                  </DialogClose>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <label htmlFor="player2" className="text-right font-medium">
-                    Player 2
-                  </label>
-                  <input
-                    id="player2"
-                    value={player2Name}
-                    onChange={(e) => setPlayer2Name(e.target.value)}
-                    className="col-span-3 flex h-10 rounded-md border border-input bg-background px-3 py-2"
-                    placeholder="Enter player 2 name"
-                  />
+              </DialogHeader>
+              <form>
+                <div className="grid gap-4 py-4">
+                  {/* Your existing player name inputs */}
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <label htmlFor="player1" className="text-right font-medium">
+                      Player 1
+                    </label>
+                    <input
+                      id="player1"
+                      value={player1Name}
+                      onChange={(e) => setPlayer1Name(e.target.value)}
+                      className="col-span-3 flex h-10 rounded-md border border-input bg-background px-3 py-2"
+                      placeholder="Enter player 1 name"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <label htmlFor="player2" className="text-right font-medium">
+                      Player 2
+                    </label>
+                    <input
+                      id="player2"
+                      value={player2Name}
+                      onChange={(e) => setPlayer2Name(e.target.value)}
+                      className="col-span-3 flex h-10 rounded-md border border-input bg-background px-3 py-2"
+                      placeholder="Enter player 2 name"
+                    />
+                  </div>
+      
+                    {/* Add account section inside the form */}
+                  <div className="border-t mt-4 pt-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">Signed in as:</div>
+                      {/* Use optional chaining to safely access the email */}
+                      <div className="text-sm text-gray-600">
+                        {session?.user?.email || 'Loading...'}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => signOut()}
+                      className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                    >
+                      Sign Out
+                      </button>
+                  </div>
+                  </div>
                 </div>
               </form>
             </DialogContent>
