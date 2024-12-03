@@ -66,9 +66,16 @@ const PlayersStatsDialog = ({
   const averageTime = stats.shots > 0 ? (stats.totalTime / stats.shots).toFixed(1) : 0;
   const maxTime = Math.max(...shotTimes);
   const minTime = Math.min(...shotTimes);
-  const medianTime = shotTimes.length > 0 
-    ? shotTimes.slice().sort((a, b) => a - b)[Math.floor(shotTimes.length / 2)]
-    : 0;
+
+  // Format total time to show minutes if over 60 seconds
+  const formatTotalTime = (totalSeconds: number) => {
+    if (totalSeconds < 60) {
+      return `${totalSeconds}s`;
+    }
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}m ${seconds}s`;
+  };
 
   const DeleteButton: React.FC<DeleteButtonProps> = ({ onClick }) => (
     <button
@@ -113,8 +120,8 @@ const PlayersStatsDialog = ({
           </Card>
           <Card className="bg-yellow-50 border-0">
             <CardContent className="p-4">
-              <div className="text-sm text-yellow-600 mb-1">Median Time</div>
-              <div className="text-2xl font-bold text-yellow-800">{medianTime}s</div>
+              <div className="text-sm text-yellow-600 mb-1">Total Time</div>
+              <div className="text-2xl font-bold text-yellow-800">{formatTotalTime(stats.totalTime)}</div>
             </CardContent>
           </Card>
           <Card className="bg-purple-50 border-0">

@@ -479,26 +479,26 @@ const switchPlayer = () => {
                 <div className="grid gap-4 py-4">
                   {/* Your existing player name inputs */}
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <label htmlFor="player1" className="text-right font-medium">
+                    <label htmlFor="player1" className="text-right font-medium text-gray-900">
                       Player 1
                     </label>
                     <input
                       id="player1"
                       value={player1Name}
                       onChange={(e) => setPlayer1Name(e.target.value)}
-                      className="col-span-3 flex h-10 rounded-md border border-input bg-background px-3 py-2"
+                      className="col-span-3 flex h-10 rounded-md border border-gray-200 bg-white px-3 py-2 text-gray-900"
                       placeholder="Enter player 1 name"
                     />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <label htmlFor="player2" className="text-right font-medium">
+                    <label htmlFor="player2" className="text-right font-medium text-gray-900">
                       Player 2
                     </label>
                     <input
                       id="player2"
                       value={player2Name}
                       onChange={(e) => setPlayer2Name(e.target.value)}
-                      className="col-span-3 flex h-10 rounded-md border border-input bg-background px-3 py-2"
+                      className="col-span-3 flex h-10 rounded-md border border-gray-200 bg-white px-3 py-2 text-gray-900"
                       placeholder="Enter player 2 name"
                     />
                   </div>
