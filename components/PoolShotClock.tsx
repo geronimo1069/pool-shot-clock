@@ -766,7 +766,7 @@ const switchPlayer = () => {
 
       {/* Footer */}
       <div className="text-center mt-4 text-gray-400 text-sm">
-        Designed by: J. Girardi
+        Designed by: JJ Girardi
       </div>
       </div>
       <PlayersStatsDialog 
