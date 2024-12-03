@@ -466,10 +466,10 @@ const switchPlayer = () => {
                 <Settings size={24} />
               </button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="bg-white border-gray-200">
               <DialogHeader>
                 <div className="flex items-center justify-between">
-                  <DialogTitle>Player Settings</DialogTitle>
+                <DialogTitle className="text-gray-900">Player Settings</DialogTitle>
                   <DialogClose className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors text-sm font-medium">
                   Return
                   </DialogClose>
