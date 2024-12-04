@@ -123,14 +123,35 @@ const PoolShotClock = () => {
   const [currentPlayer, setCurrentPlayer] = useState(1);
   const [player1Name, setPlayer1Name] = useState("Player 1");
   const [player2Name, setPlayer2Name] = useState("Player 2");
+  const [wins, setWins] = useState<WinsState>({ player1: 0, player2: 0 });
+
+  // Match timer state
+  const [matchTime, setMatchTime] = useState(0);
+  const [isMatchTimerRunning, setIsMatchTimerRunning] = useState(false);
+  const matchTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const [innings, setInnings] = useState(0);
+  const [selectedPlayer, setSelectedPlayer] = useState<PlayerNumber>(1);
+  const [statsDialogOpen, setStatsDialogOpen] = useState(false);
+
   const [playerStats, setPlayerStats] = useState<PlayerStatsState>({
     player1: { shots: 0, totalTime: 0, shotTimes: [] },
     player2: { shots: 0, totalTime: 0, shotTimes: [] }
   });
 
-  const [selectedPlayer, setSelectedPlayer] = useState<PlayerNumber>(1);
-  const [statsDialogOpen, setStatsDialogOpen] = useState(false);
-  const [wins, setWins] = useState<WinsState>({ player1: 0, player2: 0 });
+  // Function to format time in HH:MM:SS
+  const formatTime = (seconds: number): string => {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+  
+  const pad = (num: number): string => String(num).padStart(2, '0');
+  
+  if (hours > 0) {
+    return `${pad(hours)}:${pad(minutes)}:${pad(remainingSeconds)}`;
+  }
+  return `${pad(minutes)}:${pad(remainingSeconds)}`;
+};
   
   const [isTimeOut, setIsTimeOut] = useState(false);
   const [timeOutTime, setTimeOutTime] = useState(0);
@@ -152,6 +173,38 @@ const PoolShotClock = () => {
     }
     return null;
   };
+
+  // Update pauseTimer to not affect match timer
+  const pauseTimer = () => {
+    if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = undefined;
+   }
+    setIsRunning(false);
+  };
+
+  // Start match timer when game begins
+  useEffect(() => {
+    if (!matchTimerRef.current && isRunning) {
+      matchTimerRef.current = setInterval(() => {
+        setMatchTime(prev => prev + 1);
+      }, 1000);
+    }
+  
+    return () => {
+      if (!isRunning && matchTimerRef.current) {
+        clearInterval(matchTimerRef.current);
+        matchTimerRef.current = null;
+      }
+    };
+  }, [isRunning]);
+
+const startTimer = () => {
+    setIsRunning(true);
+    timerRef.current = setInterval(() => {
+        setCurrentTime(prev => prev + 1);
+    }, 1000);
+};
   
   useEffect(() => {
     const savedWins = localStorage.getItem('poolWins');
@@ -204,6 +257,38 @@ const PoolShotClock = () => {
   const warningTime = 25;
   const timeLimit = 35;
 
+  // Update resetStats to also reset match timer
+  const resetStats = () => {
+    // Stop timers
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = undefined;
+    }
+    if (matchTimerRef.current) {
+      clearInterval(matchTimerRef.current);
+      matchTimerRef.current = null;
+    }
+
+    setIsRunning(false);
+    setCurrentTime(0);
+    setInnings(0);
+    setPlayerStats({
+      player1: { shots: 0, totalTime: 0, shotTimes: [] },
+      player2: { shots: 0, totalTime: 0, shotTimes: [] }
+    });
+    setWins({ player1: 0, player2: 0 });
+    setMatchTime(0);
+    setIsMatchTimerRunning(false);
+    if (matchTimerRef.current) {
+      clearInterval(matchTimerRef.current);
+      matchTimerRef.current = null;
+    }
+    localStorage.removeItem('poolPlayerStats');
+    localStorage.removeItem('poolWins');
+    localStorage.removeItem('poolPlayerNames');
+    window.location.reload();
+  };
+
   // Save player names whenever they change
   useEffect(() => {
     const dataToSave = { player1Name, player2Name };
@@ -215,43 +300,6 @@ const PoolShotClock = () => {
     console.log('Attempting to save stats:', playerStats);
     localStorage.setItem('poolPlayerStats', JSON.stringify(playerStats));
   }, [playerStats]);
-
-  // Modify resetStats to also clear localStorage
-  const resetStats = () => {
-    pauseTimer();
-    setCurrentTime(0);
-    setInnings(0);
-    setPlayerStats({
-      player1: { shots: 0, totalTime: 0, shotTimes: [] },
-      player2: { shots: 0, totalTime: 0, shotTimes: [] }
-    });
-
-    // Reset wins
-    setWins({ player1: 0, player2: 0 });
-
-    // Clear localStorage
-    localStorage.removeItem('poolPlayerStats');
-    localStorage.removeItem('poolWins');
-    localStorage.removeItem('poolPlayerNames');
-
-    // Refresh the page
-    window.location.reload();
-  };
-
-  const startTimer = () => {
-    setIsRunning(true);
-    timerRef.current = setInterval(() => {
-      setCurrentTime(prev => prev + 1);
-    }, 1000);
-};
-
-const pauseTimer = () => {
-    if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = undefined;
-    }
-    setIsRunning(false);
-};
   
 const nextShot = () => {
   const playerKey: PlayerKey = currentPlayer === 1 ? 'player1' : 'player2';
@@ -405,8 +453,6 @@ const switchPlayer = () => {
     }
     return 'bg-indigo-600 hover:bg-indigo-700';
   };
-
-  const [innings, setInnings] = useState(0);
 
   // Save wins to localStorage when they change
   useEffect(() => {
@@ -700,7 +746,7 @@ const switchPlayer = () => {
               {getShotCounts('player1').blue}
             </span>
           </div>
-          <div className="text-sm font-medium text-gray-600 mt-2">Longest Times:</div>
+          <div className="text-sm font-medium text-gray-600 mt-2">Last 12 Shot Times:</div>
           <div className="grid grid-cols-4 gap-1 mt-1">
             {renderTimeRow(getRecentShots('player1'), 0, 4)}
           </div>
@@ -734,7 +780,7 @@ const switchPlayer = () => {
               {getShotCounts('player2').blue}
             </span>
           </div>
-          <div className="text-sm font-medium text-gray-600 mt-2">Longest Times:</div>
+          <div className="text-sm font-medium text-gray-600 mt-2">Last 12 Shot Times:</div>
           <div className="grid grid-cols-4 gap-1 mt-1">
             {renderTimeRow(getRecentShots('player2'), 0, 4)}
           </div>
@@ -747,10 +793,10 @@ const switchPlayer = () => {
         </button>
       </div>
 
-      {/* Game Stats Section */}
+      {/* Updated Game Stats Section */}
       <div className="bg-white rounded-lg shadow p-4">
         <div className="text-lg font-bold mb-2">Game Stats</div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div className="bg-blue-50 p-3 rounded">
             <div className="text-sm text-gray-600 mb-1">Total Innings</div>
             <div className="text-2xl font-bold text-blue-600">{innings}</div>
@@ -761,14 +807,22 @@ const switchPlayer = () => {
               {wins.player1} / {wins.player2}
             </div>
           </div>
+          <div className="bg-purple-50 p-3 rounded">
+            <div className="text-sm text-gray-600 mb-1">Match Time</div>
+            <div className="text-2xl font-bold text-purple-600">
+              {formatTime(matchTime)}
+            </div>
+          </div>
         </div>
       </div>
+    </div>      
 
       {/* Footer */}
       <div className="text-center mt-4 text-gray-400 text-sm">
         Designed by: JJ Girardi
       </div>
-      </div>
+
+      {/* Player Stats Dialog */}      
       <PlayersStatsDialog 
         player={selectedPlayer}
         isOpen={statsDialogOpen}
@@ -780,7 +834,5 @@ const switchPlayer = () => {
     </div>
   );
 };
-
-
 
 export default PoolShotClock;
